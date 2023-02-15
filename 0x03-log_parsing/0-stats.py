@@ -1,58 +1,37 @@
 #!/usr/bin/env python3
 
 import sys
-from collections import defaultdict
 
-# Initialize counters and variables
-total_size = 0
-status_counts = defaultdict(int)
+# initialize counters
+total_file_size = 0
+status_code_counts = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
 line_count = 0
 
-# Read input from stdin
-for line in sys.stdin:
-    line = line.strip()
+try:
+    for line in sys.stdin:
+        # parse the line
+        try:
+            ip_address, _, _, _, status_code_str, file_size_str = line.split()
+            status_code = int(status_code_str)
+            file_size = int(file_size_str)
+        except ValueError:
+            # skip line if format is not as expected
+            continue
 
-    # Parse input line
-    try:
-        ip, _, _, date, _, request, status, size = line.split()
-        method, path, protocol = request.split()
-        size = int(size)
-        status = int(status)
-    except ValueError:
-        continue  # Skip line if input format is invalid
+        # update counters
+        total_file_size += file_size
+        status_code_counts[status_code] += 1
+        line_count += 1
 
-    # Update counters and variables
-    total_size += size
-    status_counts[status] += 1
-    line_count += 1
-
-    # Print statistics every 10 lines or on keyboard interrupt (CTRL+C)
-    if line_count % 10 == 0:
-        print(f'Total file size: {total_size}')
-
-        for code in sorted(status_counts.keys()):
-            if code in [200, 301, 400, 401, 403, 404, 405, 500]:
-                count = status_counts[code]
-                print(f'{code}: {count}')
-
-    try:
+        # print metrics every 10 lines
         if line_count % 10 == 0:
-            sys.stdout.flush()  # Make sure output is flushed to stdout
-    except KeyboardInterrupt:
-        print(f'Total file size: {total_size}')
-
-        for code in sorted(status_counts.keys()):
-            if code in [200, 301, 400, 401, 403, 404, 405, 500]:
-                count = status_counts[code]
-                print(f'{code}: {count}')
-
-        sys.exit(0)
-
-# Print final statistics
-print(f'Total file size: {total_size}')
-
-for code in sorted(status_counts.keys()):
-    if code in [200, 301, 400, 401, 403, 404, 405, 500]:
-        count = status_counts[code]
-        print(f'{code}: {count}')
-
+            print(f"File size: {total_file_size}")
+            for code in sorted(status_code_counts.keys()):
+                if status_code_counts[code] > 0:
+                    print(f"{code}: {status_code_counts[code]}")
+except KeyboardInterrupt:
+    # print final metrics on keyboard interrupt
+    print(f"File size: {total_file_size}")
+    for code in sorted(status_code_counts.keys()):
+        if status_code_counts[code] > 0:
+            print(f"{code}: {status_code_counts[code]}")
