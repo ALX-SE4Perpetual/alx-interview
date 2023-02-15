@@ -2,36 +2,40 @@
 
 import sys
 
-# initialize counters
-total_file_size = 0
-status_code_counts = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-line_count = 0
+# Initialize variables
+total_size = 0
+status_codes = {}
 
 try:
-    for line in sys.stdin:
-        # parse the line
+    for i, line in enumerate(sys.stdin):
+        # Parse line and extract relevant information
         try:
-            ip_address, _, _, _, status_code_str, file_size_str = line.split()
-            status_code = int(status_code_str)
-            file_size = int(file_size_str)
+            ip, _, _, date, _, request, status, size = line.split()
+            if request != "GET /projects/260 HTTP/1.1":
+                continue
+            status = int(status)
+            size = int(size)
         except ValueError:
-            # skip line if format is not as expected
             continue
 
-        # update counters
-        total_file_size += file_size
-        status_code_counts[status_code] += 1
-        line_count += 1
+        # Update total file size
+        total_size += size
 
-        # print metrics every 10 lines
-        if line_count % 10 == 0:
-            print(f"File size: {total_file_size}")
-            for code in sorted(status_code_counts.keys()):
-                if status_code_counts[code] > 0:
-                    print(f"{code}: {status_code_counts[code]}")
+        # Update number of lines by status code
+        if status in status_codes:
+            status_codes[status] += 1
+        else:
+            status_codes[status] = 1
+
+        # Print statistics every 10 lines
+        if (i + 1) % 10 == 0:
+            print(f"File size: {total_size}")
+            for code in sorted(status_codes):
+                print(f"{code}: {status_codes[code]}")
+            print()
+
 except KeyboardInterrupt:
-    # print final metrics on keyboard interrupt
-    print(f"File size: {total_file_size}")
-    for code in sorted(status_code_counts.keys()):
-        if status_code_counts[code] > 0:
-            print(f"{code}: {status_code_counts[code]}")
+    # Handle keyboard interrupt
+    print(f"File size: {total_size}")
+    for code in sorted(status_codes):
+        print(f"{code}: {status_codes[code]}")
