@@ -54,4 +54,3 @@ if __name__ == "__main__":
                 continue
     except (KeyboardInterrupt, EOFError):
         print_logs()
-
