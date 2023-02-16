@@ -1,48 +1,56 @@
 #!/usr/bin/python3
-"""
-Task - Script that reads stdin line by line and computes metrics
-"""
+"""Reads stdin line by line and computes metrics"""
+import re
 
-import sys
+regex = (
+    r'^([\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}) - '
+    r'\[(.*)\] "GET \/projects\/260 HTTP\/1\.1" (\d+) (\d+)$'
+)
+
+logs = []
+status_codes = {
+    200: 0,
+    301: 0,
+    400: 0,
+    401: 0,
+    403: 0,
+    404: 0,
+    405: 0,
+    500: 0
+}
+size = 0
+line_count = 0
+
+
+def print_logs() -> None:
+    """Prints logs"""
+    global size
+
+    for log in logs:
+        size += int(re.match(regex, log).group(4))
+        status_code = int(re.match(regex, log).group(3))
+        if status_code in status_codes:
+            status_codes[status_code] += 1
+
+    print("File size: {}".format(size))
+    for key, value in status_codes.items():
+        if value > 0:
+            print("{}: {}".format(key, value))
 
 
 if __name__ == "__main__":
-    st_code = {"200": 0,
-               "301": 0,
-               "400": 0,
-               "401": 0,
-               "403": 0,
-               "404": 0,
-               "405": 0,
-               "500": 0}
-    count = 1
-    file_size = 0
-
-    def parse_line(line):
-        """ Read, parse and grab data"""
-        try:
-            parsed_line = line.split()
-            status_code = parsed_line[-2]
-            if status_code in st_code.keys():
-                st_code[status_code] += 1
-            return int(parsed_line[-1])
-        except Exception:
-            return 0
-
-    def print_stats():
-        """print stats in ascending order"""
-        print("File size: {}".format(file_size))
-        for key in sorted(st_code.keys()):
-            if st_code[key]:
-                print("{}: {}".format(key, st_code[key]))
-
     try:
-        for line in sys.stdin:
-            file_size += parse_line(line)
-            if count % 10 == 0:
-                print_stats()
-            count += 1
-    except KeyboardInterrupt:
-        print_stats()
-        raise
-    print_stats()
+        while True:
+            log = input()
+            if re.match(regex, log):
+                logs.append(log)
+                line_count += 1
+                if line_count % 10 == 0:
+                    print_logs()
+                    logs.clear()
+                    line_count = 0
+
+            else:
+                continue
+    except (KeyboardInterrupt, EOFError):
+        print_logs()
