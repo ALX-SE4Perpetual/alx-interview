@@ -1,45 +1,45 @@
 #!/usr/bin/python3
 
-"""
-Script that reads stdin line by line and computes metrics
-"""
+"""Script that reads stdin line by line and computes metrics"""
 
 import sys
 
-# Initialize variables
-total_size = 0
-status_codes = {}
+
+def printsts(dic, size):
+    """ WWPrints information """
+    print("File size: {:d}".format(size))
+    for i in sorted(dic.keys()):
+        if dic[i] != 0:
+            print("{}: {:d}".format(i, dic[i]))
+
+
+sts = {"200": 0, "301": 0, "400": 0, "401": 0, "403": 0,
+       "404": 0, "405": 0, "500": 0}
+
+count = 0
+size = 0
 
 try:
-    for i, line in enumerate(sys.stdin):
-        # Parse line and extract relevant information
+    for line in sys.stdin:
+        if count != 0 and count % 10 == 0:
+            printsts(sts, size)
+
+        stlist = line.split()
+        count += 1
+
         try:
-            ip, _, _, date, _, request, status, size = line.split()
-            if request != "GET /projects/260 HTTP/1.1":
-                continue
-            status = int(status)
-            size = int(size)
-        except ValueError:
-            continue
+            size += int(stlist[-1])
+        except:
+            pass
 
-        # Update total file size
-        total_size += size
+        try:
+            if stlist[-2] in sts:
+                sts[stlist[-2]] += 1
+        except:
+            pass
+    printsts(sts, size)
 
-        # Update number of lines by status code
-        if status in status_codes:
-            status_codes[status] += 1
-        else:
-            status_codes[status] = 1
-
-        # Print statistics every 10 lines
-        if (i + 1) % 10 == 0:
-            print(f"File size: {total_size}")
-            for code in sorted(status_codes):
-                print(f"{code}: {status_codes[code]}")
-            print()
 
 except KeyboardInterrupt:
-    # Handle keyboard interrupt
-    print(f"File size: {total_size}")
-    for code in sorted(status_codes):
-        print(f"{code}: {status_codes[code]}")
+    printsts(sts, size)
+    raise
