@@ -1,56 +1,49 @@
 #!/usr/bin/python3
-"""Reads stdin line by line and computes metrics"""
-import re
+"""
+This module parses logs
+"""
+import sys
 
-regex = (
-    r'^([\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}) - '
-    r'\[(.*)\] "GET \/projects\/260 HTTP\/1\.1" (\d+) (\d+)$'
-)
-
-logs = []
+total_size = 0
 status_codes = {
-    200: 0,
-    301: 0,
-    400: 0,
-    401: 0,
-    403: 0,
-    404: 0,
-    405: 0,
-    500: 0
+    '200': 0,
+    '301': 0,
+    '400': 0,
+    '401': 0,
+    '403': 0,
+    '404': 0,
+    '405': 0,
+    '500': 0
 }
-size = 0
-line_count = 0
 
 
-def print_logs() -> None:
-    """Prints logs"""
-    global size
+def print_stats():
+    """
+    Prints the required statistics gotten from the logs
 
-    for log in logs:
-        size += int(re.match(regex, log).group(4))
-        status_code = int(re.match(regex, log).group(3))
-        if status_code in status_codes:
-            status_codes[status_code] += 1
+    Args:
+        None
 
-    print("File size: {}".format(size))
-    for key, value in status_codes.items():
-        if value > 0:
-            print("{}: {}".format(key, value))
+    Returns:
+        None
+    """
+    print("File size: {}".format(total_size))
+    for code, count in sorted(status_codes.items()):
+        if count != 0:
+            print("{}: {}".format(code, count))
 
 
-if __name__ == "__main__":
-    try:
-        while True:
-            log = input()
-            if re.match(regex, log):
-                logs.append(log)
-                line_count += 1
-                if line_count % 10 == 0:
-                    print_logs()
-                    logs.clear()
-                    line_count = 0
-
-            else:
-                continue
-    except (KeyboardInterrupt, EOFError):
-        print_logs()
+try:
+    for i, line in enumerate(sys.stdin, start=1):
+        try:
+            values = line.rstrip().split()
+            total_size += int(values[-1])
+            status_codes[values[-2]] += 1
+        except Exception:
+            pass
+        if i % 10 == 0:
+            print_stats()
+    print_stats()
+except KeyboardInterrupt:
+    print_stats()
+    raise
